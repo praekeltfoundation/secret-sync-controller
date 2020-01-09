@@ -6,6 +6,8 @@ TODO:
  * Sync to multiple destinations.
 """
 
+from contextlib import contextmanager
+
 import attr
 import kopf
 import pykube
@@ -52,25 +54,24 @@ class SecretRef:
     def _as_pykube(self):
         return pykube.Secret(_kapi, {"metadata": self._meta()})
 
-    def get(self, logger):
-        secret = self._as_pykube()
+    @contextmanager
+    def _existing_pykube(self, logger):
         try:
-            secret.reload()
+            yield self._as_pykube()
         except pykube.exceptions.HTTPError as e:
             if e.code != 404:
                 raise
             logger.warning(f"Secret not found: {self}")
+
+    def get(self, logger):
+        with self._existing_pykube(logger) as secret:
+            secret.reload()
         return secret
 
     def patch(self, logger, patch_obj):
-        secret = self._as_pykube()
         add_annotation(patch_obj, ANN_WATCH, "true")
-        try:
+        with self._existing_pykube(logger) as secret:
             secret.patch(patch_obj)
-        except pykube.exceptions.HTTPError as e:
-            if e.code != 404:
-                raise
-            logger.warning(f"Secret not found while patching: {self}")
         return secret
 
 
@@ -89,7 +90,6 @@ def copy_secret_data(src_secret, logger):
     Copy data from source secret to destination secret.
     """
     dst_ref = SecretRef.from_annotation(src_secret["metadata"])
-    # print(dst_ref.get(logger))
     to_secret = dst_ref.patch(logger, {"data": {**src_secret["data"]}})
     logger.info(f"CSD after: {to_secret.obj}")
 

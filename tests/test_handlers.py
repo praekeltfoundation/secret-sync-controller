@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 import attr
 
@@ -93,5 +94,5 @@ def test_copy_secret_data_with_missing_dest_logs_warning(caplog):
 
         logger = logging.getLogger()
         handlers.copy_secret_data(src_secret.to_k8s_dict(), logger)
-        msg = "Secret not found while patching: ns/dst"
+        msg = "Secret not found: ns/dst"
         assert caplog.record_tuples == [(logger.name, logging.WARNING, msg)]
