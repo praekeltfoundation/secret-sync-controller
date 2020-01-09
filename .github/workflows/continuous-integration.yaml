@@ -1,0 +1,64 @@
+name: continuous integration
+on:
+  - push
+  - pull_request
+
+jobs:
+  tests:
+    name: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: set up py37
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
+      - name: install deps
+        run: |
+          python -m pip install -U pip
+          pip install tox
+      - name: run tests
+        run: |
+          mkdir -p ~/.kube
+          cp .ci/kubeconfig.yaml ~/.kube/config
+          tox
+  e2e_tests:
+    name: end to end tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        kubernetes_version: ['1.15.7']
+    steps:
+      - uses: actions/checkout@v1
+      - name: set up py37
+        uses: actions/setup-python@v1
+        with:
+          python-version: "3.7"
+      - name: install deps
+        run: |
+          python -m pip install -U pip
+          pip install tox
+      - name: setup minikube
+        id: minikube
+        uses: CodingNagger/minikube-setup-action@v1.0.2
+        with:
+          minikube-version: 1.6.2
+          k8s-version: ${{ matrix.kubernetes_version }}
+      - name: start minikube
+        # We need some different startup parameters from what the minikube
+        # action gives us, so we ignore its launcher output and do our own
+        # thing.
+        run: |
+          export CHANGE_MINIKUBE_NONE_USER=true
+          export MINIKUBE_WANTUPDATENOTIFICATION=false
+          export MINIKUBE_WANTREPORTERRORPROMPT=false
+          export MINIKUBE_HOME=$HOME
+          sudo -E minikube start \
+               --vm-driver=none \
+               --extra-config=apiserver.authorization-mode=Node,RBAC \
+               --extra-config=apiserver.runtime-config=events.k8s.io/v1beta1=false \
+               --extra-config=kubeadm.ignore-preflight-errors=SystemVerification \
+               --kubernetes-version=v"${{ matrix.kubernetes_version }}"
+      - name: run tests
+        run: |
+          tox -e e2e
