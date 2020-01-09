@@ -91,19 +91,15 @@ def copy_secret_data(src_secret, logger):
     """
     dst_ref = SecretRef.from_annotation(src_secret["metadata"])
     dst_secret = dst_ref.patch(logger, {"data": {**src_secret["data"]}})
-    logger.info(f"CSD after: {dst_secret.obj}")
+    logger.info(f"synced secret: {dst_secret.obj}")
 
 
 @kopf.on.event("", "v1", "secrets", annotations={ANN_SYNC_TO: None})
 def source_secret_event(body, event, logger, **_kw):
-    logger.info(
-        f"SOURCE EVENT! {event['type']}\n  BODY: {body}\n  EVENT: {event}"
-    )
     copy_secret_data(body, logger)
 
 
 @kopf.on.event("", "v1", "secrets", annotations={ANN_WATCH: None})
 def watched_secret_event(meta, event, logger, **_kw):
-    logger.debug(
-        f"DEST EVENT! {event['type']} {meta['namespace']}/{meta['name']}"
-    )
+    # TODO: Sync when the destination changes.
+    pass
