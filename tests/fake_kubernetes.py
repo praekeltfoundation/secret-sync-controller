@@ -80,13 +80,11 @@ class FakeKubernetes:
 
     def _handle_POST_core(self, req):
         namespace, kind, _path = split_path(req.path_url, skip=4)
-        print(namespace, kind, _path)
         return self._put_obj(kind, namespace, json.loads(req.body))
 
     def _handle_PATCH_core(self, req):
         namespace, kind, path = split_path(req.path_url, skip=4)
         [name] = path
-        print(namespace, kind, name)
         return self._patch_obj(kind, namespace, name, json.loads(req.body))
 
     def _get_obj(self, kind, namespace, name):

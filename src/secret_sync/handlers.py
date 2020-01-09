@@ -41,7 +41,7 @@ class SecretRef:
 
     @classmethod
     def from_meta(cls, meta):
-        return cls(namespace=meta["namespace"], name=meta["namespace"])
+        return cls(namespace=meta["namespace"], name=meta["name"])
 
     @classmethod
     def from_annotation(cls, meta):
@@ -90,8 +90,8 @@ def copy_secret_data(src_secret, logger):
     Copy data from source secret to destination secret.
     """
     dst_ref = SecretRef.from_annotation(src_secret["metadata"])
-    to_secret = dst_ref.patch(logger, {"data": {**src_secret["data"]}})
-    logger.info(f"CSD after: {to_secret.obj}")
+    dst_secret = dst_ref.patch(logger, {"data": {**src_secret["data"]}})
+    logger.info(f"CSD after: {dst_secret.obj}")
 
 
 @kopf.on.event("", "v1", "secrets", annotations={ANN_SYNC_TO: None})
