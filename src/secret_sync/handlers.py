@@ -2,7 +2,7 @@
 Sync data fields between secrets.
 
 TODO:
- * Sync when destination secret changes.
+ * Sync to different namespaces.
  * Sync to multiple destinations.
 """
 
@@ -19,6 +19,19 @@ ANN_WATCH = f"{ANNOTATION_PREFIX}/watch"
 
 _kcfg = None
 _kapi = None
+
+
+# We update this whenever we see a source event. The mapping is always
+# sufficiently complete, because there is no ordering of events that does not
+# result in an appropriate sync operation:
+#  * If either src or dst doesn't exist, no sync is possible.
+#  * If we see the src event first, we sync and update the mapping.
+#  * If we see the dst event first, we ignore it and sync on the dst event.
+_destination_map = {}
+
+
+def _add_src_dst_mapping(src_ref, dst_ref):
+    _destination_map.setdefault(dst_ref, set()).add(src_ref)
 
 
 def add_annotation(obj, annotation, value):
@@ -60,19 +73,19 @@ class SecretRef:
             yield self._as_pykube()
         except pykube.exceptions.HTTPError as e:
             if e.code != 404:
-                raise
+                raise  # pragma: no cover
             logger.warning(f"Secret not found: {self}")
 
     def get(self, logger):
         with self._existing_pykube(logger) as secret:
             secret.reload()
-        return secret
+        return secret.obj
 
     def patch(self, logger, patch_obj):
         add_annotation(patch_obj, ANN_WATCH, "true")
         with self._existing_pykube(logger) as secret:
             secret.patch(patch_obj)
-        return secret
+        return secret.obj
 
 
 @kopf.on.startup()
@@ -91,15 +104,19 @@ def copy_secret_data(src_secret, logger):
     """
     dst_ref = SecretRef.from_annotation(src_secret["metadata"])
     dst_secret = dst_ref.patch(logger, {"data": {**src_secret["data"]}})
-    logger.info(f"synced secret: {dst_secret.obj}")
+    logger.info(f"synced secret: {dst_secret}")
 
 
 @kopf.on.event("", "v1", "secrets", annotations={ANN_SYNC_TO: None})
-def source_secret_event(body, event, logger, **_kw):
+def source_secret_event(body, meta, event, logger, **_kw):
+    src_ref = SecretRef.from_meta(meta)
+    dst_ref = SecretRef.from_annotation(meta)
+    _add_src_dst_mapping(src_ref, dst_ref)
     copy_secret_data(body, logger)
 
 
 @kopf.on.event("", "v1", "secrets", annotations={ANN_WATCH: None})
 def watched_secret_event(meta, event, logger, **_kw):
-    # TODO: Sync when the destination changes.
-    pass
+    dst_ref = SecretRef.from_meta(meta)
+    for src_ref in _destination_map.get(dst_ref, set()):
+        copy_secret_data(src_ref.get(logger), logger)

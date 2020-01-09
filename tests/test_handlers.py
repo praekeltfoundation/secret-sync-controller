@@ -130,3 +130,28 @@ def test_source_secret_event_copies_secret_data():
         new_dst = k8s.secrets[("ns", "dst")]
         assert new_dst["metadata"]["annotations"][ANN_WATCH] == "true"
         assert new_dst["data"] == {"foo": "aGVsbG8="}
+
+
+def test_watched_secret_event_copies_secret_data(caplog):
+    """
+    All data fields from the source are copied to the destination and the
+    "watch" annotation is added to the destination.
+    """
+    with mk_k8s() as k8s:
+        src_secret = FakeSecret.mk_src("ns/src", "dst", {"foo": "aGVsbG8="})
+        src_dict = src_secret.to_k8s_dict()
+        k8s.secrets[("ns", "src")] = src_dict
+        # We need to have seen this event to know the destination mapping.
+        handlers.source_secret_event(**handler_args(None, src_dict))
+        # Clear the warning about the missing destination.
+        caplog.clear()
+
+        dst_secret = FakeSecret.mk_dst("ns/dst", watch=True)
+        dst_dict = dst_secret.to_k8s_dict()
+        k8s.secrets[("ns", "dst")] = dst_dict
+
+        handlers.watched_secret_event(**handler_args("ADDED", dst_dict))
+
+        new_dst = k8s.secrets[("ns", "dst")]
+        assert new_dst["metadata"]["annotations"][ANN_WATCH] == "true"
+        assert new_dst["data"] == {"foo": "aGVsbG8="}
