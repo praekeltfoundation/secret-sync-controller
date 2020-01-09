@@ -4,6 +4,8 @@ Sync data fields between secrets.
 TODO:
  * Sync to different namespaces.
  * Sync to multiple destinations.
+ * Do something sensible with deletion events.
+ * Do sensible things with whatever other events we receive.
 """
 
 from contextlib import contextmanager
