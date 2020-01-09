@@ -1,7 +1,6 @@
 import time
 
 import pytest
-import yaml
 
 from .helpers import kopf_runner, namespaced_kube_helper
 
@@ -48,7 +47,7 @@ def wait_for_log(start_time, caplog, msg, skip=0):
                 return
 
 
-def secret_yaml(name, annotations=None, data={}):
+def mk_secret(name, annotations=None, data={}):
     secret = {
         "apiVersion": "v1",
         "kind": "Secret",
@@ -58,13 +57,11 @@ def secret_yaml(name, annotations=None, data={}):
     }
     if annotations:
         secret["metadata"]["annotations"] = annotations
-    print(secret)
     return secret
-    return yaml.dump(secret)
 
 
-def src_yaml(name, sync_to, data):
-    return secret_yaml(name, {ANN_SYNC_TO: sync_to}, data)
+def mk_src_secret(name, sync_to, data):
+    return mk_secret(name, {ANN_SYNC_TO: sync_to}, data)
 
 
 def test_sync_one_source_unwatched_dest(caplog, kube):
@@ -75,8 +72,8 @@ def test_sync_one_source_unwatched_dest(caplog, kube):
     """
     start_time = time.monotonic()
     with kopf_runner(kube):
-        kube.kubectl_apply(secret_yaml("dst"))
-        kube.kubectl_apply(src_yaml("src", "dst", {"foo": "aGVsbG8="}))
+        kube.kubectl_apply(mk_secret("dst"))
+        kube.kubectl_apply(mk_src_secret("src", "dst", {"foo": "aGVsbG8="}))
 
         wait_for_log(start_time, caplog, LOG_SOURCE_SUCCESS)
 
@@ -92,8 +89,8 @@ def test_sync_one_source_unwatched_dest_startup(caplog, kube):
     kopf, wait for the sync, and ensure that the destination has the data from
     the source and the watch annotation.
     """
-    kube.kubectl_apply(secret_yaml("dst"))
-    kube.kubectl_apply(src_yaml("src", "dst", {"foo": "aGVsbG8="}))
+    kube.kubectl_apply(mk_secret("dst"))
+    kube.kubectl_apply(mk_src_secret("src", "dst", {"foo": "aGVsbG8="}))
 
     start_time = time.monotonic()
     with kopf_runner(kube):

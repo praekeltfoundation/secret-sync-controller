@@ -47,12 +47,6 @@ class KubeHelper:
     def kubectl_delete(self, body):
         self._kubectl(["delete", "-f", "-"], self._prepare_yaml(body))
 
-    def apply_yaml(self, filename):
-        self.kubectl_apply(yaml.safe_load(open(filename, "rt")))
-
-    def delete_yaml(self, filename):
-        self.kubectl_delete(yaml.safe_load(open(filename, "rt")))
-
 
 @contextmanager
 def namespaced_kube_helper():
