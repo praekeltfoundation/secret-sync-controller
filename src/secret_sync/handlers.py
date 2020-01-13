@@ -28,7 +28,7 @@ _kapi = None
 # result in an appropriate sync operation:
 #  * If either src or dst doesn't exist, no sync is possible.
 #  * If we see the src event first, we sync and update the mapping.
-#  * If we see the dst event first, we ignore it and sync on the dst event.
+#  * If we see the dst event first, we ignore it and sync on the src event.
 _destination_map = {}
 
 
