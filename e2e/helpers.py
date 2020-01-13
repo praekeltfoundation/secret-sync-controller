@@ -33,6 +33,20 @@ class KubeHelper:
     def list_secrets(self):
         return pykube.Secret.objects(self._api).filter(namespace=self._ns)
 
+    def _mk_meta(self, **fields):
+        return {"namespace": self._ns, **fields}
+
+    def ns_name(self, name):
+        return f"{self._ns}/{name}"
+
+    def patch_secret(self, name, patch):
+        sec = pykube.Secret(self._api, {"metadata": self._mk_meta(name=name)})
+        return sec.patch(patch)
+
+    def delete_secret(self, name):
+        sec = pykube.Secret(self._api, {"metadata": self._mk_meta(name=name)})
+        return sec.delete()
+
     def _prepare_yaml(self, body):
         body["metadata"]["namespace"] = self._ns
         return yaml.dump(body).encode("utf8")
