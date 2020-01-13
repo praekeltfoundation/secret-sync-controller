@@ -34,7 +34,7 @@ def strategic_merge_dict(obj, patch):
     NOTE: Assumes all nested objects in both obj and patch are dicts.
     """
     for k, v in patch.items():
-        if k in obj:
+        if k in obj and isinstance(v, dict):
             strategic_merge_dict(obj[k], v)
         else:
             obj[k] = v
