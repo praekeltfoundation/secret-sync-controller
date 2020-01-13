@@ -155,3 +155,115 @@ def test_watched_secret_event_copies_secret_data(caplog):
         new_dst = k8s.secrets[("ns", "dst")]
         assert new_dst["metadata"]["annotations"][ANN_WATCH] == "true"
         assert new_dst["data"] == {"foo": "aGVsbG8="}
+
+
+def test_source_secret_modified_copies_secret_data():
+    """
+    When a source secret is modified, all data fields are copied to the
+    destination.
+    """
+    with mk_k8s() as k8s:
+        src_secret = FakeSecret.mk_src("ns/src", "dst", {"foo": "aGVsbG8="})
+        src_dict = src_secret.to_k8s_dict()
+        k8s.secrets[("ns", "src")] = src_dict
+
+        dst_secret = FakeSecret.mk_dst("ns/dst")
+        k8s.secrets[("ns", "dst")] = dst_secret.to_k8s_dict()
+
+        # Sync once so everything's in a sensible state.
+        handlers.source_secret_event(**handler_args("ADDED", src_dict))
+
+        src_dict = k8s.secrets[("ns", "src")]
+        src_dict["data"]["foo"] = "Z29vZGJ5ZQ=="
+        handlers.source_secret_event(**handler_args("MODIFIED", src_dict))
+
+        new_dst = k8s.secrets[("ns", "dst")]
+        assert new_dst["data"] == {"foo": "Z29vZGJ5ZQ=="}
+
+
+def test_watched_secret_modified_copies_secret_data():
+    """
+    When a destination secret is modified, all data fields are copied from the
+    source.
+    """
+    with mk_k8s() as k8s:
+        src_secret = FakeSecret.mk_src("ns/src", "dst", {"foo": "aGVsbG8="})
+        src_dict = src_secret.to_k8s_dict()
+        k8s.secrets[("ns", "src")] = src_dict
+
+        dst_secret = FakeSecret.mk_dst("ns/dst")
+        k8s.secrets[("ns", "dst")] = dst_secret.to_k8s_dict()
+
+        # Sync once so everything's in a sensible state.
+        handlers.source_secret_event(**handler_args("ADDED", src_dict))
+
+        dst_dict = k8s.secrets[("ns", "dst")]
+        dst_dict["data"]["foo"] = "Z29vZGJ5ZQ=="
+        handlers.watched_secret_event(**handler_args("MODIFIED", dst_dict))
+
+        new_dst = k8s.secrets[("ns", "dst")]
+        assert new_dst["data"] == {"foo": "aGVsbG8="}
+
+
+def test_source_secret_deleted_logs_warnings(caplog):
+    """
+    When a source secret is deleted, a warning is logged for the deletion and
+    for each watched secret event that attempts to sync from it thereafter.
+    """
+    with mk_k8s() as k8s:
+        src_secret = FakeSecret.mk_src("ns/src", "dst", {"foo": "aGVsbG8="})
+        src_dict = src_secret.to_k8s_dict()
+        k8s.secrets[("ns", "src")] = src_dict
+
+        dst_secret = FakeSecret.mk_dst("ns/dst")
+        k8s.secrets[("ns", "dst")] = dst_secret.to_k8s_dict()
+
+        # Sync once so everything's in a sensible state.
+        handlers.source_secret_event(**handler_args("ADDED", src_dict))
+
+        # Delete the source secret.
+        src_dict = k8s.secrets.pop(("ns", "src"))
+        handlers.source_secret_event(**handler_args("DELETED", src_dict))
+
+        # Update the destination secret to trigger a sync.
+        dst_dict = k8s.secrets[("ns", "dst")]
+        dst_dict["data"]["foo"] = "Z29vZGJ5ZQ=="
+        handlers.watched_secret_event(**handler_args("MODIFIED", dst_dict))
+
+        logger = logging.getLogger()
+        assert caplog.record_tuples == [
+            (logger.name, logging.WARNING, "Source secret deleted: ns/src"),
+            (logger.name, logging.WARNING, "Secret not found: ns/src"),
+        ]
+
+
+def test_watched_secret_deleted_logs_warnings(caplog):
+    """
+    When a watched secret is deleted, a warning is logged for the deletion and
+    for each source secret event that attempts to sync to it thereafter.
+    """
+    with mk_k8s() as k8s:
+        src_secret = FakeSecret.mk_src("ns/src", "dst", {"foo": "aGVsbG8="})
+        src_dict = src_secret.to_k8s_dict()
+        k8s.secrets[("ns", "src")] = src_dict
+
+        dst_secret = FakeSecret.mk_dst("ns/dst")
+        k8s.secrets[("ns", "dst")] = dst_secret.to_k8s_dict()
+
+        # Sync once so everything's in a sensible state.
+        handlers.source_secret_event(**handler_args("ADDED", src_dict))
+
+        # Delete the destination secret.
+        dst_dict = k8s.secrets.pop(("ns", "dst"))
+        handlers.watched_secret_event(**handler_args("DELETED", dst_dict))
+
+        # Update the destination secret to trigger a sync.
+        src_dict = k8s.secrets[("ns", "src")]
+        src_dict["data"]["foo"] = "Z29vZGJ5ZQ=="
+        handlers.source_secret_event(**handler_args("MODIFIED", src_dict))
+
+        logger = logging.getLogger()
+        assert caplog.record_tuples == [
+            (logger.name, logging.WARNING, "Watched secret deleted: ns/dst"),
+            (logger.name, logging.WARNING, "Secret not found: ns/dst"),
+        ]
