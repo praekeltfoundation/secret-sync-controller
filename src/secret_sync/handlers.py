@@ -64,11 +64,8 @@ class SecretRef:
         """
         Build a SecretRef for the given source secret metadata's destination.
         """
-        ann = meta.get("annotations", {})
-        name = ann.get(ANN_SYNC_TO)
-        if name is None:
-            return None
-        return cls(namespace=meta["namespace"], name=name)
+        ann = meta["annotations"]
+        return cls(namespace=meta["namespace"], name=ann[ANN_SYNC_TO])
 
     def _meta(self):
         return {"name": self.name, "namespace": self.namespace}
