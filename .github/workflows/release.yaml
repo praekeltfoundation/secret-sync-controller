@@ -11,11 +11,11 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Publish Docker Image to Github packages
-      uses: machine-learning-apps/gpr-docker-publish@master
+      uses: machine-learning-apps/gpr-docker-publish@v1.4
       id: docker
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        USERNAME: praekeltdeploy
-        PASSWORD: ${{ secrets.GITHUB_PA_TOKEN }}
         IMAGE_NAME: 'secret-sync-controller'
         DOCKERFILE_PATH: 'Dockerfile'
         BUILD_CONTEXT: '.'
