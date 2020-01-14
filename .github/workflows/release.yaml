@@ -1,0 +1,21 @@
+name: create release
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Publish Docker Image to Github packages
+      uses: machine-learning-apps/gpr-docker-publish@master
+      id: docker
+      with:
+        USERNAME: praekeltdeploy
+        PASSWORD: ${{ secrets.GITHUB_PA_TOKEN }}
+        IMAGE_NAME: 'secret-sync-controller'
+        DOCKERFILE_PATH: 'Dockerfile'
+        BUILD_CONTEXT: '.'
