@@ -12,7 +12,9 @@ def read(*parts):
 
 setup(
     name="secret-sync-controller",
-    version="0.0.1",
+    # NOTE: When updating the version for release, don't forget to update the
+    # deploy YAML as well.
+    version="0.0.2.dev0",
     license="MIT",
     description="Secret Sync Controller",
     author="Praekelt.org SRE team",
