@@ -12,7 +12,7 @@ def read(*parts):
 
 setup(
     name="secret-sync-controller",
-    version="0.0.1dev0",
+    version="0.0.1",
     license="MIT",
     description="Secret Sync Controller",
     author="Praekelt.org SRE team",

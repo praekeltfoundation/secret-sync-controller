@@ -19,4 +19,4 @@ spec:
       containers:
       - name: secret-sync-controller
         imagePullPolicy: IfNotPresent
-        image: secret-sync-controller:latest
+        image: docker.pkg.github.com/praekeltfoundation/secret-sync-controller/secret-sync-controller:v0.0.1
