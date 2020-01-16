@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secret-sync-controller
+  namespace: secret-sync-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: secret-sync-controller
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        application: secret-sync-controller
+    spec:
+      serviceAccountName: secret-sync-controller-sa
+      containers:
+      - name: secret-sync-controller
+        imagePullPolicy: IfNotPresent
+        image: secret-sync-controller:latest
