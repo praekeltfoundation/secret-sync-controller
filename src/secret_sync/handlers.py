@@ -2,7 +2,6 @@
 Sync data fields between secrets.
 
 TODO:
- * Sync to different namespaces.
  * Sync to multiple destinations.
 """
 
@@ -64,8 +63,11 @@ class SecretRef:
         """
         Build a SecretRef for the given source secret metadata's destination.
         """
-        ann = meta["annotations"]
-        return cls(namespace=meta["namespace"], name=ann[ANN_SYNC_TO])
+        name = meta["annotations"][ANN_SYNC_TO]
+        ns = meta["namespace"]
+        if "/" in name:
+            ns, name = name.split("/", 2)
+        return cls(namespace=ns, name=name)
 
     def _meta(self):
         return {"name": self.name, "namespace": self.namespace}
