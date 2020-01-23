@@ -54,10 +54,15 @@ def wait_for_log(start_time, caplog, msg, count=1):
 
 
 def mk_secret(name, annotations=None, data={}):
+    metadata = {}
+    if "/" in name:
+        ns, name = name.split("/", 2)
+        metadata["namespace"] = ns
+    metadata["name"] = name
     secret = {
         "apiVersion": "v1",
         "kind": "Secret",
-        "metadata": {"name": name},
+        "metadata": metadata,
         "type": "Opaque",
         "data": data,
     }
@@ -71,7 +76,10 @@ def mk_src_secret(name, sync_to, data):
 
 
 def find_secret(kube, name):
-    for secret in kube.list_secrets():
+    ns = None
+    if "/" in name:
+        ns, name = name.split("/", 2)
+    for secret in kube.list_secrets(ns):
         if secret.name == name:
             return secret.obj
 
@@ -195,3 +203,24 @@ def test_delete_dest(caplog, kube):
     src_secret = find_secret(kube, "src")
     assert src_secret["metadata"]["annotations"][ANN_SYNC_TO] == "dst"
     assert src_secret["data"] == {"foo": "Z29vZGJ5ZQ=="}
+
+
+def test_sync_to_different_namespace(caplog, kube):
+    """
+    Create an empty destination secret in a different namespace, create a
+    source secret, wait for the sync, and ensure that the destination has the
+    data from the source and the watch annotation.
+    """
+    start_time = time.monotonic()
+    with kopf_runner(kube):
+        dst_ns = kube.create_new_namespace()
+        dst_name = f"{dst_ns}/dst"
+        kube.kubectl_apply(mk_secret(dst_name))
+        kube.kubectl_apply(mk_src_secret("src", dst_name, {"foo": "aGVsbG8="}))
+
+        wait_for_log(start_time, caplog, LOG_SOURCE_SUCCESS)
+
+    dst_secret = find_secret(kube, dst_name)
+    assert dst_secret is not None
+    assert dst_secret["metadata"]["annotations"][ANN_WATCH] == "true"
+    assert dst_secret["data"] == {"foo": "aGVsbG8="}

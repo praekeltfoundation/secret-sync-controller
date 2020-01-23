@@ -267,3 +267,23 @@ def test_watched_secret_deleted_logs_warnings(caplog):
             (logger.name, logging.WARNING, "Watched secret deleted: ns/dst"),
             (logger.name, logging.WARNING, "Secret not found: ns/dst"),
         ]
+
+
+def test_copy_secret_data_copies_data_to_different_namespace():
+    """
+    Data fields are copied and the "watch" annotation added even if the
+    destination is in a different namespace.
+    """
+    with mk_k8s() as k8s:
+        src = FakeSecret.mk_src("ns/src", "ns2/dst", {"foo": "aGVsbG8="})
+        k8s.secrets[("ns", "src")] = src.to_k8s_dict()
+
+        dst = FakeSecret.mk_dst("ns2/dst")
+        k8s.secrets[("ns2", "dst")] = dst.to_k8s_dict()
+
+        logger = logging.getLogger()
+        handlers.copy_secret_data(src.to_k8s_dict(), logger)
+
+        new_dst = k8s.secrets[("ns2", "dst")]
+        assert new_dst["metadata"]["annotations"][ANN_WATCH] == "true"
+        assert new_dst["data"] == {"foo": "aGVsbG8="}

@@ -16,22 +16,32 @@ def pykube_config():
 class KubeHelper:
     def __init__(self):
         self._api = pykube.HTTPClient(pykube_config())
+        self._namespaces = set()
         self._ns = f"secret-sync-e2etest-{uuid.uuid4()}"
 
-    def _get_namespace(self):
-        return pykube.Namespace.objects(self._api).get(name=self._ns)
+    def _get_namespace(self, name):
+        return pykube.Namespace.objects(self._api).get(name=name)
 
-    def _create_namespace(self):
-        body = {"metadata": {"name": self._ns}}
+    def _create_namespace(self, name):
+        self._namespaces.add(name)
+        body = {"metadata": {"name": name}}
         return pykube.Namespace(self._api, body).create()
 
-    def _delete_namespace(self):
-        nsobj = self._get_namespace()
-        if nsobj:
-            return nsobj.delete()
+    def _delete_namespaces(self):
+        for name in self._namespaces:
+            nsobj = self._get_namespace(name)
+            if nsobj:
+                nsobj.delete()
 
-    def list_secrets(self):
-        return pykube.Secret.objects(self._api).filter(namespace=self._ns)
+    def create_new_namespace(self):
+        name = f"secret-sync-e2etest-{uuid.uuid4()}"
+        self._create_namespace(name)
+        return name
+
+    def list_secrets(self, ns=None):
+        if ns is None:
+            ns = self._ns
+        return pykube.Secret.objects(self._api).filter(namespace=ns)
 
     def _mk_meta(self, **fields):
         return {"namespace": self._ns, **fields}
@@ -48,7 +58,7 @@ class KubeHelper:
         return sec.delete()
 
     def _prepare_yaml(self, body):
-        body["metadata"]["namespace"] = self._ns
+        body["metadata"].setdefault("namespace", self._ns)
         return yaml.dump(body).encode("utf8")
 
     def _kubectl(self, args, input):
@@ -65,11 +75,11 @@ class KubeHelper:
 @contextmanager
 def namespaced_kube_helper():
     kube = KubeHelper()
-    kube._create_namespace()
+    kube._create_namespace(kube._ns)
     try:
         yield kube
     finally:
-        kube._delete_namespace()
+        kube._delete_namespaces()
 
 
 @contextmanager
