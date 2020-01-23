@@ -30,8 +30,7 @@ class KubeHelper:
     def _delete_namespaces(self):
         for name in self._namespaces:
             nsobj = self._get_namespace(name)
-            if nsobj:
-                nsobj.delete()
+            nsobj.delete()
 
     def create_new_namespace(self):
         name = f"secret-sync-e2etest-{uuid.uuid4()}"
