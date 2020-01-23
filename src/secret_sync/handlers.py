@@ -1,8 +1,5 @@
 """
 Sync data fields between secrets.
-
-TODO:
- * Sync to multiple destinations.
 """
 
 from contextlib import contextmanager
@@ -59,15 +56,20 @@ class SecretRef:
         return cls(namespace=meta["namespace"], name=meta["name"])
 
     @classmethod
-    def find_destination(cls, meta):
-        """
-        Build a SecretRef for the given source secret metadata's destination.
-        """
-        name = meta["annotations"][ANN_SYNC_TO]
-        ns = meta["namespace"]
+    def _find_destination(cls, ns, name):
         if "/" in name:
             ns, name = name.split("/", 2)
         return cls(namespace=ns, name=name)
+
+    @classmethod
+    def find_destinations(cls, meta):
+        """
+        Build a SecretRef for each of the given source secret metadata's
+        destinations.
+        """
+        ns = meta["namespace"]
+        dests = meta["annotations"][ANN_SYNC_TO].split(",")
+        return [cls._find_destination(ns, name) for name in dests]
 
     def _meta(self):
         return {"name": self.name, "namespace": self.namespace}
@@ -113,11 +115,12 @@ def auth_pykube(**_kw):
 
 def copy_secret_data(src_secret, logger):
     """
-    Copy data from source secret to destination secret.
+    Copy data from source secret to destination secret(s).
     """
-    dst_ref = SecretRef.find_destination(src_secret["metadata"])
-    dst_secret = dst_ref.patch(logger, {"data": {**src_secret["data"]}})
-    logger.info(f"synced secret: {dst_secret}")
+    dst_refs = SecretRef.find_destinations(src_secret["metadata"])
+    for dst_ref in dst_refs:
+        dst_secret = dst_ref.patch(logger, {"data": {**src_secret["data"]}})
+        logger.info(f"synced secret: {dst_secret}")
 
 
 @kopf.on.event("", "v1", "secrets", annotations={ANN_SYNC_TO: None})
@@ -140,8 +143,8 @@ def source_secret_event(body, meta, event, logger, **_kw):
     if event["type"] == "DELETED":
         logger.warning(f"Source secret deleted: {src_ref}")
         return
-    dst_ref = SecretRef.find_destination(meta)
-    _add_src_dst_mapping(src_ref, dst_ref)
+    for dst_ref in SecretRef.find_destinations(meta):
+        _add_src_dst_mapping(src_ref, dst_ref)
     copy_secret_data(body, logger)
 
 

@@ -224,3 +224,31 @@ def test_sync_to_different_namespace(caplog, kube):
     assert dst_secret is not None
     assert dst_secret["metadata"]["annotations"][ANN_WATCH] == "true"
     assert dst_secret["data"] == {"foo": "aGVsbG8="}
+
+
+def test_sync_to_multiple_dests(caplog, kube):
+    """
+    Create two empty destination secrets, create a source secret, wait for the
+    sync, and ensure that the destinations have the data from the source and
+    the watch annotation.
+    """
+    start_time = time.monotonic()
+    with kopf_runner(kube):
+        dst2_ns = kube.create_new_namespace()
+        dst2_name = f"{dst2_ns}/dst2"
+        kube.kubectl_apply(mk_secret("dst1"))
+        kube.kubectl_apply(mk_secret(dst2_name))
+        dst_str = f"dst1,{dst2_name}"
+        kube.kubectl_apply(mk_src_secret("src", dst_str, {"foo": "aGVsbG8="}))
+
+        wait_for_log(start_time, caplog, LOG_SOURCE_SUCCESS)
+
+    dst1_secret = find_secret(kube, "dst1")
+    assert dst1_secret is not None
+    assert dst1_secret["metadata"]["annotations"][ANN_WATCH] == "true"
+    assert dst1_secret["data"] == {"foo": "aGVsbG8="}
+
+    dst2_secret = find_secret(kube, dst2_name)
+    assert dst2_secret is not None
+    assert dst2_secret["metadata"]["annotations"][ANN_WATCH] == "true"
+    assert dst2_secret["data"] == {"foo": "aGVsbG8="}

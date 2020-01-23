@@ -287,3 +287,30 @@ def test_copy_secret_data_copies_data_to_different_namespace():
         new_dst = k8s.secrets[("ns2", "dst")]
         assert new_dst["metadata"]["annotations"][ANN_WATCH] == "true"
         assert new_dst["data"] == {"foo": "aGVsbG8="}
+
+
+def test_copy_secret_data_copies_data_to_multiple_destinations():
+    """
+    Data fields are copied and the "watch" annotation added to multiple
+    destinations.
+    """
+    with mk_k8s() as k8s:
+        dst1 = FakeSecret.mk_dst("ns/dst1")
+        k8s.secrets[("ns", "dst1")] = dst1.to_k8s_dict()
+
+        dst2 = FakeSecret.mk_dst("ns2/dst2")
+        k8s.secrets[("ns2", "dst2")] = dst2.to_k8s_dict()
+
+        src = FakeSecret.mk_src("ns/src", "dst1,ns2/dst2", {"foo": "aGVsbG8="})
+        k8s.secrets[("ns", "src")] = src.to_k8s_dict()
+
+        logger = logging.getLogger()
+        handlers.copy_secret_data(src.to_k8s_dict(), logger)
+
+        new_dst1 = k8s.secrets[("ns", "dst1")]
+        assert new_dst1["metadata"]["annotations"][ANN_WATCH] == "true"
+        assert new_dst1["data"] == {"foo": "aGVsbG8="}
+
+        new_dst2 = k8s.secrets[("ns2", "dst2")]
+        assert new_dst2["metadata"]["annotations"][ANN_WATCH] == "true"
+        assert new_dst2["data"] == {"foo": "aGVsbG8="}
