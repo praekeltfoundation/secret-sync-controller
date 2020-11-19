@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        kubernetes_version: ['1.15.7']
+        kubernetes_version: ['1.15.7', '1.16.15', '1.17.12', '1.18.9']
     steps:
       - uses: actions/checkout@v1
       - name: set up py37
@@ -43,9 +43,9 @@ jobs:
           pip install tox
       - name: setup minikube
         id: minikube
-        uses: CodingNagger/minikube-setup-action@v1.0.2
+        uses: CodingNagger/minikube-setup-action@v1.0.3
         with:
-          minikube-version: 1.6.2
+          minikube-version: 1.15.1
           k8s-version: ${{ matrix.kubernetes_version }}
       - name: start minikube
         # We need some different startup parameters from what the minikube
