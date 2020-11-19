@@ -12,8 +12,8 @@ jobs:
       matrix:
         python-version: [3.7, 3.8, 3.9]
     steps:
-      - uses: actions/checkout@v1
-      - name: set up python ${{ matrix.python-version }}
+      - uses: actions/checkout@v2
+      - name: setup python ${{ matrix.python-version }}
         uses: actions/setup-python@v1
         with:
           python-version: ${{ matrix.python-version }}
@@ -34,8 +34,8 @@ jobs:
       matrix:
         kubernetes_version: ['1.15.7', '1.16.15', '1.17.12', '1.18.9']
     steps:
-      - uses: actions/checkout@v1
-      - name: set up py37
+      - uses: actions/checkout@v2
+      - name: setup py37
         uses: actions/setup-python@v1
         with:
           python-version: "3.7"
@@ -49,21 +49,6 @@ jobs:
         with:
           minikube version: v1.15.1
           kubernetes version: v${{ matrix.kubernetes_version }}
-      # - name: start minikube
-      #   # We need some different startup parameters from what the minikube
-      #   # action gives us, so we ignore its launcher output and do our own
-      #   # thing.
-      #   run: |
-      #     export CHANGE_MINIKUBE_NONE_USER=true
-      #     export MINIKUBE_WANTUPDATENOTIFICATION=false
-      #     export MINIKUBE_WANTREPORTERRORPROMPT=false
-      #     export MINIKUBE_HOME=$HOME
-      #     sudo -E minikube start \
-      #          --vm-driver=none \
-      #          --extra-config=apiserver.authorization-mode=Node,RBAC \
-      #          --extra-config=apiserver.runtime-config=events.k8s.io/v1beta1=false \
-      #          --extra-config=kubeadm.ignore-preflight-errors=SystemVerification \
-      #          --kubernetes-version=v"${{ matrix.kubernetes_version }}"
       - name: run tests
         run: |
           tox -e e2e
