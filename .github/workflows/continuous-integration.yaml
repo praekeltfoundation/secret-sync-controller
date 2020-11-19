@@ -8,6 +8,7 @@ jobs:
     name: tests
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: [3.7, 3.8, 3.9]
     steps:
@@ -29,6 +30,7 @@ jobs:
     name: end to end tests
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         kubernetes_version: ['1.15.7', '1.16.15', '1.17.12', '1.18.9']
     steps:
@@ -45,8 +47,8 @@ jobs:
         id: minikube
         uses: manusa/actions-setup-minikube@v2.0.1
         with:
-          minikube version: 1.15.1
-          kubernetes version: ${{ matrix.kubernetes_version }}
+          minikube version: v1.15.1
+          kubernetes version: v${{ matrix.kubernetes_version }}
       # - name: start minikube
       #   # We need some different startup parameters from what the minikube
       #   # action gives us, so we ignore its launcher output and do our own
