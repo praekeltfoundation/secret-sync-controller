@@ -7,16 +7,19 @@ jobs:
   tests:
     name: tests
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8, 3.9]
     steps:
       - uses: actions/checkout@v1
-      - name: set up py37
+      - name: set up python ${{ matrix.python-version }}
         uses: actions/setup-python@v1
         with:
-          python-version: 3.7
+          python-version: ${{ matrix.python-version }}
       - name: install deps
         run: |
           python -m pip install -U pip
-          pip install tox
+          pip install tox tox-gh-actions
       - name: run tests
         run: |
           mkdir -p ~/.kube
