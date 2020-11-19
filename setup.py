@@ -1,6 +1,6 @@
 import os
 
-from setuptools import find_packages, setup
+from setuptools import find_packages, setup  # type: ignore
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 
@@ -35,6 +35,7 @@ setup(
             "black",
             "flake8",
             "isort",
+            "mypy",
             "pytest>=4.0.0",
             "pytest-cov",
             "pytest-responses",
