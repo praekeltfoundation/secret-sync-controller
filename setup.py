@@ -1,6 +1,6 @@
 import os
 
-from setuptools import find_packages, setup
+from setuptools import find_packages, setup  # type: ignore
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 
@@ -26,8 +26,8 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         "attrs",
-        # Pin kopf because it is rapidly evolving.
-        "kopf==0.24",
+        # Pin kopf because it is (somewhat) rapidly evolving.
+        "kopf==0.28",
         "pykube-ng>=19.10.0",
     ],
     extras_require={
@@ -35,6 +35,7 @@ setup(
             "black",
             "flake8",
             "isort",
+            "mypy",
             "pytest>=4.0.0",
             "pytest-cov",
             "pytest-responses",

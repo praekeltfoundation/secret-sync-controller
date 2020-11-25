@@ -1,12 +1,29 @@
-#!/bin/sh
+#!/bin/bash
 
-targets="src/secret_sync/ tests/ e2e/ setup.py"
+ANSI_RED='\033[0;31m'
+ANSI_GREEN='\033[0;32m'
+ANSI_RESET='\033[0m'
 
-# Detect whether any of the checks have failed so we can avoid returning early.
-failed=0
+# This is a function to better handle paths that may contains whitespace.
+lint() {
+    # Track failures so we can avoid returning early.
+    failed=0
 
-flake8 $targets || failed=1
-isort -c -rc $targets || failed=1
-black --check -l79 $targets || failed=1
+    flake8 "$@" || failed=1
+    # Skip mypy for now.
+    # mypy --warn-unreachable "$@" || failed=1
+    isort -c "$@" || failed=1
+    black --check -l79 "$@" || failed=1
+    return $failed
+}
 
-exit $failed
+lint src/secret_sync/ tests/ e2e/ setup.py
+result=$?
+
+if [ $result = 0 ]; then
+    echo -e "${ANSI_GREEN}Lint passed!${ANSI_RESET}"
+else
+    echo -e "${ANSI_RED}Lint failed!${ANSI_RESET}"
+fi
+
+exit $result

@@ -123,7 +123,7 @@ def copy_secret_data(src_secret, logger):
         logger.info(f"synced secret: {dst_secret}")
 
 
-@kopf.on.event("", "v1", "secrets", annotations={ANN_SYNC_TO: None})
+@kopf.on.event("", "v1", "secrets", annotations={ANN_SYNC_TO: kopf.PRESENT})
 def source_secret_event(body, meta, event, logger, **_kw):
     """
     Handle a sync event for a source secret.
@@ -148,7 +148,7 @@ def source_secret_event(body, meta, event, logger, **_kw):
     copy_secret_data(body, logger)
 
 
-@kopf.on.event("", "v1", "secrets", annotations={ANN_WATCH: None})
+@kopf.on.event("", "v1", "secrets", annotations={ANN_WATCH: kopf.PRESENT})
 def watched_secret_event(meta, event, logger, **_kw):
     """
     Handle a sync event for a destination secret we're watching.

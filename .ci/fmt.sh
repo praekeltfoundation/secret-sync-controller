@@ -1,6 +1,9 @@
 #!/bin/sh
 
-targets="src/secret_sync/ tests/ e2e/ setup.py"
+# This is a function to better handle paths that may contains whitespace.
+fmt() {
+    isort "$@"
+    black -l79 "$@"
+}
 
-isort -rc $targets
-black -l79 $targets
+fmt src/secret_sync/ tests/ e2e/ setup.py
