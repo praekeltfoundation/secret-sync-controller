@@ -32,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kubernetes_version: ['1.15.7', '1.16.15', '1.17.12', '1.18.9']
+        kubernetes_version: ['1.15.7', '1.16.15', '1.17.12', '1.18.9', '1.19.6', '1.20.1']
     steps:
       - uses: actions/checkout@v2
       - name: setup py37
