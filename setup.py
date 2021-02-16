@@ -14,7 +14,7 @@ setup(
     name="secret-sync-controller",
     # NOTE: When updating the version for release, don't forget to update the
     # deploy YAML as well.
-    version="0.0.2",
+    version="0.0.3.dev0",
     license="MIT",
     description="Secret Sync Controller",
     author="Praekelt.org SRE team",
