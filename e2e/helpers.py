@@ -3,9 +3,9 @@ import subprocess
 import uuid
 from contextlib import contextmanager
 
+import kopf
 import pykube
 import yaml
-from kopf.config import WatchersConfig
 from kopf.testing import KopfRunner
 
 
@@ -96,10 +96,10 @@ def kopf_runner(kube):
     # Set the kopf watcher stream timeout to something small so we don't have
     # to wait too long at the end of the tests for all the background watcher
     # threads to end.
-    old_stream_timeout = WatchersConfig.default_stream_timeout
-    WatchersConfig.default_stream_timeout = 2
+    settings = kopf.OperatorSettings()
+    settings.watching.server_timeout = 1
     try:
-        with KopfRunner(["run", *args]) as runner:
+        with KopfRunner(["run", *args], settings=settings) as runner:
             # Remove any extra log handlers that starting kopf may have added.
             # The built-in pytest log capture does what we need already.
             for handler in logger.handlers[:]:
@@ -107,6 +107,5 @@ def kopf_runner(kube):
                     logger.removeHandler(handler)
             yield runner
     finally:
-        WatchersConfig.default_stream_timeout = old_stream_timeout
         # The runner captures all output, so print it for pytest to capture.
         print(runner.stdout)

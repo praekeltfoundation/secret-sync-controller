@@ -27,7 +27,7 @@ setup(
     install_requires=[
         "attrs",
         # Pin kopf because it is (somewhat) rapidly evolving.
-        "kopf==0.28",
+        "kopf==1.29.2",
         "pykube-ng>=19.10.0",
     ],
     extras_require={
