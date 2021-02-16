@@ -10,8 +10,7 @@ lint() {
     failed=0
 
     flake8 "$@" || failed=1
-    # Skip mypy for now.
-    # mypy --warn-unreachable "$@" || failed=1
+    mypy --warn-unreachable "$@" || failed=1
     isort -c "$@" || failed=1
     black --check -l79 "$@" || failed=1
     return $failed

@@ -22,12 +22,13 @@ setup(
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
     packages=find_packages("src"),
+    package_data={"": ["py.typed"]},
     package_dir={"": "src"},
     python_requires=">=3.7",
     install_requires=[
         "attrs",
         # Pin kopf because it is (somewhat) rapidly evolving.
-        "kopf==0.28",
+        "kopf==1.29.2",
         "pykube-ng>=19.10.0",
     ],
     extras_require={
@@ -35,7 +36,7 @@ setup(
             "black",
             "flake8",
             "isort",
-            "mypy",
+            "mypy>=0.800",
             "pytest>=4.0.0",
             "pytest-cov",
             "pytest-responses",

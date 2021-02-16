@@ -2,11 +2,14 @@
 Sync data fields between secrets.
 """
 
+# To get nicer type annotations in Python 3.7 and 3.8.
+from __future__ import annotations
+
 from contextlib import contextmanager
 
 import attr
-import kopf
-import pykube
+import kopf  # type: ignore
+import pykube  # type: ignore
 
 ANNOTATION_PREFIX = "secret-sync.praekelt.org"
 ANN_SYNC_TO = f"{ANNOTATION_PREFIX}/sync-to"
@@ -15,24 +18,6 @@ ANN_WATCH = f"{ANNOTATION_PREFIX}/watch"
 
 _kcfg = None
 _kapi = None
-
-
-# We update this whenever we see a source event. The mapping is always
-# sufficiently complete, because there is no ordering of events that does not
-# result in an appropriate sync operation:
-#  * If either src or dst doesn't exist, no sync is possible.
-#  * If we see the src event first, we sync and update the mapping.
-#  * If we see the dst event first, we ignore it and sync on the src event.
-_destination_map = {}
-
-
-def _add_src_dst_mapping(src_ref, dst_ref):
-    _destination_map.setdefault(dst_ref, set()).add(src_ref)
-
-
-def add_annotation(obj, annotation, value):
-    annotations = obj.setdefault("metadata", {}).setdefault("annotations", {})
-    annotations[annotation] = value
 
 
 @attr.s(frozen=True)
@@ -93,14 +78,33 @@ class SecretRef:
             # an exception that the context manager will catch and log, so this
             # return will be skipped.
             return secret.obj
-        # If we get here, the secret wasn't found.
-        return None
+        # If we get here, the secret wasn't found. (The "type: ignore" is to
+        # avoid a false positive from mypy's unreachable code detector.)
+        return None  # type: ignore
 
     def patch(self, logger, patch_obj):
         add_annotation(patch_obj, ANN_WATCH, "true")
         with self._existing_pykube(logger) as secret:
             secret.patch(patch_obj)
         return secret.obj
+
+
+# We update this whenever we see a source event. The mapping is always
+# sufficiently complete, because there is no ordering of events that does not
+# result in an appropriate sync operation:
+#  * If either src or dst doesn't exist, no sync is possible.
+#  * If we see the src event first, we sync and update the mapping.
+#  * If we see the dst event first, we ignore it and sync on the src event.
+_destination_map: dict[SecretRef, set[SecretRef]] = {}
+
+
+def _add_src_dst_mapping(src_ref, dst_ref):
+    _destination_map.setdefault(dst_ref, set()).add(src_ref)
+
+
+def add_annotation(obj, annotation, value):
+    annotations = obj.setdefault("metadata", {}).setdefault("annotations", {})
+    annotations[annotation] = value
 
 
 @kopf.on.startup()

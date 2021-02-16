@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from urllib.parse import unquote
 
 import attr
-import responses
+import responses  # type: ignore
 
 CORE_API = "api/v1"
 
