@@ -22,6 +22,7 @@ setup(
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
     packages=find_packages("src"),
+    package_data={"": ["py.typed"]},
     package_dir={"": "src"},
     python_requires=">=3.7",
     install_requires=[
