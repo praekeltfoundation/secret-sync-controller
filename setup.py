@@ -35,7 +35,7 @@ setup(
             "black",
             "flake8",
             "isort",
-            "mypy",
+            "mypy>=0.800",
             "pytest>=4.0.0",
             "pytest-cov",
             "pytest-responses",

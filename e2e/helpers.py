@@ -3,10 +3,10 @@ import subprocess
 import uuid
 from contextlib import contextmanager
 
-import kopf
-import pykube
+import kopf  # type: ignore
+import pykube  # type: ignore
 import yaml
-from kopf.testing import KopfRunner
+from kopf.testing import KopfRunner  # type: ignore
 
 
 def pykube_config():
