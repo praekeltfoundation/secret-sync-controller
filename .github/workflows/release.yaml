@@ -1,26 +1,46 @@
-name: create release
+name: release
+
+# NOTE: This always runs on the default branch (usually `main` or `master`),
+#       even if it's triggered by workflows running on other branches. As such,
+#       enabling it for other branches almost certainly does the wrong thing.
+
 on:
-  push:
+  workflow_run:
+    workflows: ['continuous integration']
+    types: [completed]
+    branches:
+      - main
     tags:
       - 'v*'
 
 jobs:
-  release:
-    name: release
+  build-and-push:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - name: Get the version
-      id: get_version
-      run: |
-        .ci/tag-from-ref.sh "${GITHUB_REF}"
-    - name: Publish Docker Image to Github packages
-      uses: machine-learning-apps/gpr-docker-publish@v1.4
-      id: docker
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        IMAGE_NAME: 'secret-sync-controller'
-        DOCKERFILE_PATH: 'Dockerfile'
-        BUILD_CONTEXT: '.'
-        TAG: ${{ steps.get_version.outputs.TAG }}
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: set up buildx
+        uses: docker/setup-buildx-action@v1
+      - name: construct image metadata
+        id: meta
+        uses: crazy-max/ghaction-docker-meta@v2
+        with:
+          images: |
+            ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=sha
+      - name: login to ghcr
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
