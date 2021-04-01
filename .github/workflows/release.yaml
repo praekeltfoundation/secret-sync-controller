@@ -9,7 +9,7 @@ on:
     workflows: ['continuous integration']
     types: [completed]
     branches:
-      - main
+      - master
     tags:
       - 'v*'
 
