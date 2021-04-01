@@ -14,7 +14,7 @@ on:
       - 'v*'
 
 jobs:
-  build-and-push:
+  release:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
