@@ -42,6 +42,7 @@ setup(
             "pytest-responses",
             "pyyaml",
             "responses",
+            "types-pyyaml",
         ],
     },
 )
