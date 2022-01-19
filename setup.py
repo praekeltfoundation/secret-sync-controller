@@ -28,7 +28,7 @@ setup(
     install_requires=[
         "attrs",
         # Pin kopf because it is (somewhat) rapidly evolving.
-        "kopf==1.29.2",
+        "kopf==1.35.3",
         "pykube-ng>=19.10.0",
     ],
     extras_require={
@@ -42,6 +42,7 @@ setup(
             "pytest-responses",
             "pyyaml",
             "responses",
+            "types-pyyaml",
         ],
     },
 )
